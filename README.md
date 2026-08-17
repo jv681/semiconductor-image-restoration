@@ -4,13 +4,13 @@
 
 ---
 
-## Quick Start
+## Quick Start (Inference)
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/jv681/semiconductor-image-restoration.git
+cd semiconductor-image-restoration
 pip install -r requirements.txt
 ```
 
@@ -18,12 +18,13 @@ pip install -r requirements.txt
 
 | File | Link | Size |
 |------|------|------|
-| `best_psnr_submit.pth` | [Google Drive / HuggingFace link] | ~60 MB |
+| `best_psnr_submit.pth` | *(link coming after training)* | ~60 MB |
 
-Place the downloaded file in the `checkpoints/` folder:
+Place the downloaded file in the `train/checkpoints/` folder:
 ```
-checkpoints/
-└── best_psnr_submit.pth
+train/
+└── checkpoints/
+    └── best_psnr_submit.pth
 ```
 
 ### 3. Run Inference
@@ -32,21 +33,31 @@ checkpoints/
 python evaluate.py \
   --input  /path/to/test/NoisyLR \
   --output ./outputs \
-  --model  checkpoints/best_psnr_submit.pth
+  --model  train/checkpoints/best_psnr_submit.pth
 ```
 
-**That's it.** Restored images are written to `./outputs/` as 16-bit PNG files.
+**Restored images are written to `./outputs/` as 16-bit PNG files.**
+
+For batched GPU inference (recommended on H100):
+```bash
+python evaluate.py \
+  --input  /path/to/test/NoisyLR \
+  --output ./outputs \
+  --model  train/checkpoints/best_psnr_submit.pth \
+  --batch  8
+```
 
 ---
 
-## Arguments
+## Evaluate Arguments
 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--input` / `-i` | **required** | Directory of noisy/LR input images |
-| `--output` / `-o` | **required** | Directory to write restored outputs |
+| `--output` / `-o` | **required** | Directory to write restored output images |
 | `--model` / `-m` | `checkpoints/best_psnr_submit.pth` | Path to checkpoint |
-| `--gt` | None | Optional ground-truth dir for PSNR/SSIM/LPIPS reporting |
+| `--batch` | `1` | Batch size (use 8+ on GPU for best throughput) |
+| `--gt` | None | Optional ground-truth dir for PSNR/SSIM/LPIPS |
 | `--device` | auto | `cuda` or `cpu` |
 
 ---
@@ -55,17 +66,18 @@ python evaluate.py \
 
 ```
 .
-├── evaluate.py          # ← Standalone inference script (run this for evaluation)
-├── train/
-│   ├── train.py         # Training script
-│   ├── model.py         # NAFNet architecture
-│   ├── dataset.py       # Dataset / dataloader
-│   └── overfit_test.py  # Sanity-check / overfit test
-├── checkpoints/
-│   └── best_psnr_submit.pth   # Trained model (EMA weights)
-├── outputs/             # Model outputs on test set (pre-generated)
-├── requirements.txt
-└── README.md
+├── evaluate.py              # ← Standalone inference script (run this for evaluation)
+├── requirements.txt         # pip freeze output
+├── outputs/                 # Model outputs on test set (pre-generated)
+├── README.md
+└── train/
+    ├── train.py             # Training script (reproduces training from scratch)
+    ├── model.py             # NAFNet architecture
+    ├── dataset.py           # Dataset / dataloader
+    ├── overfit_test.py      # Sanity-check / overfit test
+    └── checkpoints/         # Trained model weights (download separately)
+        ├── best_psnr_submit.pth    # ← Use this for inference (EMA weights)
+        └── best_lpips_submit.pth   # Alternative: best perceptual quality
 ```
 
 ---
@@ -74,38 +86,47 @@ python evaluate.py \
 
 ### Dataset Structure
 
+Place your data inside the `train/` folder:
+
 ```
 train/
-├── NoisyLR/   # Noisy low-resolution inputs  (e.g. 256×256)
-└── GT/        # Clean ground-truth outputs    (e.g. 512×512, 2× scale)
+├── NoisyLR/   # Noisy low-resolution input images  (.npy format, e.g. 128×128)
+└── GT/        # Clean ground-truth high-res images  (.npy format, e.g. 256×256)
 ```
+
+Or pass paths explicitly via command-line arguments (see below).
 
 ### Train
 
 ```bash
 cd train
+
+# Option 1: Data in NoisyLR/ and GT/ folders next to train.py (uses defaults)
+python train.py --epochs 80
+
+# Option 2: Pass paths explicitly (works from any directory)
 python train.py \
   --noisy-dir /path/to/NoisyLR \
   --gt-dir    /path/to/GT \
-  --epochs    100
+  --epochs    80
 ```
 
 ### Resume from checkpoint
 
 ```bash
+cd train
 python train.py \
-  --resume checkpoints/latest.pth \
-  --epochs 120
+  --resume checkpoints/best_psnr.pth \
+  --epochs 100
 ```
 
-> ⚠️ Resume only works when `--resume` checkpoint uses the **same architecture** as `CFG` in `train.py`.  
-> If you changed `enc_blocks` / `dec_blocks`, delete old checkpoints and train from scratch.
+> ⚠️ Resume only works when the checkpoint was saved with the **same architecture** as `CFG` in `train.py`. See architecture details below.
 
 ---
 
 ## Model
 
-**NAFNet** (Nonlinear Activation Free Network) — UNet-style encoder-decoder.
+**NAFNet** (Nonlinear Activation Free Network) — UNet-style encoder-decoder with 2× pixel shuffle upsampling.
 
 | Setting | Value |
 |---------|-------|
@@ -113,9 +134,9 @@ python train.py \
 | Encoder blocks | `[1, 1, 2, 4]` |
 | Decoder blocks | `[1, 1, 1, 1]` |
 | Middle blocks | 4 |
-| Parameters | ~15.9M |
-| Input | 1-channel (grayscale) noisy LR |
-| Output | 1-channel (grayscale) restored HR (2× upscale) |
+| **Parameters** | **15.9M** (optimised for GPU throughput) |
+| Input | 1-channel grayscale noisy LR (e.g. 128×128) |
+| Output | 1-channel grayscale restored HR (2× upscale, e.g. 256×256) |
 
 ## Loss Function
 
@@ -126,34 +147,33 @@ python train.py \
 | FFT | 0.15 | High-frequency detail recovery |
 | LPIPS (AlexNet) | 0.15 | Perceptual quality |
 
-## Metrics (Validation Set)
+## Results (Validation Set, 80 epochs)
 
 | Metric | Value |
 |--------|-------|
-| PSNR | ~28.5 dB |
-| SSIM | ~0.82 |
-| LPIPS | ~0.18 |
+| PSNR | 27.40 dB |
+| SSIM | 0.7911 |
+| LPIPS | 0.1612 |
 
 ---
 
-## Requirements
+## Training Configuration
 
-```
-torch>=2.0
-torchvision
-numpy
-Pillow
-tifffile
-lpips
-scikit-image
-```
-
-Full pinned requirements: see `requirements.txt`.
+| Setting | Value |
+|---------|-------|
+| Optimizer | AdamW (lr=5e-5, wd=1e-4) |
+| Scheduler | CosineAnnealingWarmRestarts |
+| Batch size | 6 (grad accum ×2 = effective 12) |
+| Patch size | 96×96 LR → 192×192 HR |
+| EMA decay | 0.9995 |
+| AMP | Enabled (CUDA) |
+| TTA | Disabled (single-pass for throughput) |
 
 ---
 
 ## Notes
 
-- **Inference is single-pass** (no TTA). Metrics during validation match inference speed.
-- **Submission checkpoint** (`best_psnr_submit.pth`) uses **EMA weights** — these match what was used during validation, not raw training weights.
-- The `evaluate.py` script auto-reads architecture config from the checkpoint, so it works without manual edits.
+- **Inference is single-pass** (no TTA). Metrics during validation exactly match real inference speed.
+- **Submission checkpoint** (`best_psnr_submit.pth`) uses **EMA weights** — these are what was used during validation, not raw training weights.
+- `evaluate.py` **auto-reads architecture config** from the checkpoint, so it works without manual edits on any machine.
+- Dataset files (NoisyLR/, GT/) are **not included** in this repo. Download or provide your own.
