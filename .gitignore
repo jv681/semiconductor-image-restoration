@@ -1,0 +1,33 @@
+# Dataset (too large - share via Drive/HuggingFace)
+train/GT/
+train/NoisyLR/
+GT/
+NoisyLR/
+
+# Checkpoints (upload separately)
+train/checkpoints/
+checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Logs and generated files
+*.log
+training_log.txt
+train/train_files.txt
+train/val_files.txt
+train/dataset_split.json
+train/overfit_result.png
+train/dataset_visualization.png
+train/split_data.py
+train/split_dataset.py
+train/test_dataset.py
+train/test_loader.py
+overfit_result.png
