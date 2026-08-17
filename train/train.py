@@ -55,8 +55,11 @@ from model import NAFNet, count_params
 # ================================================================
 CFG = {
     # --- Paths (overridable via --noisy-dir, --gt-dir, --ckpt-dir) ---
-    "noisy_dir"  : r"C:\Users\hasin\Downloads\train\train\NoisyLR",
-    "gt_dir"     : r"C:\Users\hasin\Downloads\train\train\GT",
+    # Defaults use relative paths so the script works on any machine.
+    # Place data in NoisyLR/ and GT/ folders next to train.py,
+    # OR pass --noisy-dir and --gt-dir arguments on the command line.
+    "noisy_dir"  : "NoisyLR",
+    "gt_dir"     : "GT",
     "val_split"  : 0.1,
     "ckpt_dir"   : "checkpoints",
 
