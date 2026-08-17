@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 | File | Link | Size |
 |------|------|------|
-| `best_psnr_submit.pth` | *(link coming after training)* | ~60 MB |
+| `best_psnr_submit.pth` | [HuggingFace ↗](https://huggingface.co/jvsreeja/nafnet-semiconductor/resolve/main/best_psnr_submit.pth) | 63.7 MB |
 
 Place the downloaded file in the `train/checkpoints/` folder:
 ```
