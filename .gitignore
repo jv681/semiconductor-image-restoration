@@ -33,3 +33,6 @@ train/test_loader.py
 overfit_result.png
 
 # Allow models/ weights (required for offline evaluation)
+
+# Outputs - too large; only sample kept in git
+outputs/*.npy
