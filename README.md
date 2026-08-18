@@ -147,13 +147,13 @@ python train.py \
 | FFT | 0.15 | High-frequency detail recovery |
 | LPIPS (AlexNet) | 0.15 | Perceptual quality |
 
-## Results (Validation Set, 80 epochs)
+## Results (Validation Set, 120 epochs)
 
 | Metric | Value |
 |--------|-------|
-| PSNR | 27.40 dB |
-| SSIM | 0.7911 |
-| LPIPS | 0.1612 |
+| PSNR | **27.55 dB** |
+| SSIM | **0.7930** |
+| LPIPS | **0.1465** |
 
 ---
 
