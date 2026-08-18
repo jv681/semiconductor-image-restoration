@@ -152,7 +152,7 @@ python train.py \
 | Metric | Value |
 |--------|-------|
 | PSNR | **27.55 dB** |
-| SSIM | **0.7930** |
+| SSIM | **0.7954** |
 | LPIPS | **0.1465** |
 
 ---

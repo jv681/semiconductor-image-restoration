@@ -516,6 +516,7 @@ def main(args):
 
     os.makedirs(CFG["ckpt_dir"], exist_ok=True)
     best_psnr  = 0.0
+    best_ssim  = 0.0
     best_lpips = float("inf")
     start_epoch = 1
 
@@ -539,8 +540,10 @@ def main(args):
         start_epoch = ckpt["epoch"] + 1
         print(f"Resumed from epoch {ckpt['epoch']} (optimizer + scheduler restored)")
         print(f"  best_psnr  = {best_psnr:.2f} dB")
+        best_ssim  = ckpt.get("best_ssim", 0.0)
         lpips_str = f"{best_lpips:.4f}" if best_lpips < float("inf") else "none"
         print(f"  best_lpips = {lpips_str}")
+        print(f"  best_ssim  = {best_ssim:.4f}")
         print(f"  LR         = {optimizer.param_groups[0]['lr']:.2e} (restored)")
         print(f"  Running epochs {start_epoch} to {CFG['epochs']}\n")
 
@@ -589,6 +592,7 @@ def main(args):
             "scheduler"  : scheduler.state_dict(),
             "scaler"     : scaler.state_dict(),
             "best_psnr"  : best_psnr,
+            "best_ssim"  : best_ssim,
             "best_lpips" : best_lpips,
             "cfg_snapshot": {
                 k: CFG[k] for k in
