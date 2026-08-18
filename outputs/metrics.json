@@ -1,7 +1,7 @@
 {
   "epoch": 120,
   "PSNR_dB": 27.5488,
-  "SSIM": 0.793,
+  "SSIM": 0.7954,
   "LPIPS": 0.1465,
   "params_M": 15.9,
   "architecture": {
@@ -20,5 +20,5 @@
     ],
     "mid_blocks": 4
   },
-  "note": "Metrics from validation set (EMA weights, no TTA, single-pass inference)"
+  "note": "All metrics from validation set (EMA weights, no TTA, single-pass inference). SSIM computed via exact validation pass."
 }
